@@ -5,7 +5,7 @@ using namespace std;
 
 
 
-void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note that file name here is without extension  
+void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note that file name here is without extension
 {
     ifstream sitemap;
     sitemap.open(sitemap_file_name+".txt");
@@ -16,12 +16,19 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
             // if input format is yy then there must be another layer
             string line;
             while (getline (sitemap,line)) {
-                if (line.find("<loc>") != string::npos) {
-                string url = GetInputBetween (line,"<loc>", "</loc>");
-                DownloadURLIntoFile(url, sitemap_file_name + "next_layer.txt");
-                FormatParser(sitemap_file_name + "next_latyer", yy_mm_dd, site);
+
+                int start_find_pos =0 ;
+                while (start_find_pos = line.find("<loc>",start_find_pos) != string::npos)
+                {
+                  string url = GetInputBetween(line, "<loc>", "</loc>",start_find_pos);
+
+                  if (url!= "")
+                      start_find_pos = line.find("</loc>",start_find_pos)+6;
+
+                  DownloadURLIntoFile(url, sitemap_file_name + "next_layer.txt");
+                  FormatParser(sitemap_file_name + "next_latyer", yy_mm_dd, site);
                 }
-            } 
+            }
             break;
         }
 
@@ -38,20 +45,20 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
 
                     if (url!= "")
                         start_find_pos = line.find("</loc>",start_find_pos)+6;
-                    
+
                     string holder ="";
-                    for (int i = 0; i<url.length(); i++) 
+                    for (int i = 0; i<url.length(); i++)
                         if(isdigit(url[i])) {
                             holder += url[i];
                         }
-                    
-                    // Lines that does not contain the date does not matter 
+
+                    // Lines that does not contain the date does not matter
                     if (holder.empty())
                         continue ;
 
                     string year  = holder.substr(0,4);
                     string month = holder.substr(4);
-                    site.AddToMap (url,stoi(year),stoi(month)); 
+                    site.AddToMap (url,stoi(year),stoi(month));
                 }
             }
             break;
@@ -62,9 +69,14 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
             string line;
             while (getline(sitemap, line))
             {
-                while (start_find_pos = line.find("<loc>", start_find_pos) != string::npos)
+                int start_find_pos =0 ;
+                while (start_find_pos = line.find("<loc>",start_find_pos) != string::npos)
                 {
-                    string url = GetInputBetween(line, "<loc>", "</loc>");
+                    cout<< line <<endl;
+                    string url = GetInputBetween(line, "<loc>", "</loc>",start_find_pos);
+
+                    if (url!= "")
+                        start_find_pos = line.find("</loc>",start_find_pos)+6;
 
                     string holder = "";
                     for (int i = 0; i < line.length(); i++)
@@ -91,9 +103,14 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
             string line;
             while (getline(sitemap, line))
             {
-                if (line.find("<loc>") != string::npos)
+                int start_find_pos =0 ;
+                while (start_find_pos = line.find("<loc>",start_find_pos) != string::npos)
                 {
-                    string url = GetInputBetween(line, "<loc>", "</loc>");
+                    cout<< line <<endl;
+                    string url = GetInputBetween(line, "<loc>", "</loc>",start_find_pos);
+
+                    if (url!= "")
+                        start_find_pos = line.find("</loc>",start_find_pos)+6;
 
                     string holder = "";
                     for (int i = 0; i < line.length(); i++)
@@ -113,10 +130,10 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
             }
             break;
         }
-        
-        default: 
+
+        default:
             break;
-    } 
+    }
 }
 
 void ParseSiteMap(string sitemap_file_name, Source source, SiteMap &sitemap)
@@ -128,8 +145,8 @@ void ParseSiteMap(string sitemap_file_name, Source source, SiteMap &sitemap)
             FormatParser (sitemap_file_name,yy_mm_dd,sitemap);
             break;
         }
-        
-        case ThanhNien: 
+
+        case ThanhNien:
         {
             FormatParser(sitemap_file_name,yy_mm,sitemap);
             break;
@@ -174,5 +191,5 @@ void ParseSiteMap(string sitemap_file_name, Source source, SiteMap &sitemap)
         default:
             break;
     }
-    
+
 }
