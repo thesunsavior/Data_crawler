@@ -1,0 +1,1 @@
+/usr/bin/g++ -g -rdynamic CMakeFiles/Data_crawler.dir/main.cpp.o -o Data_crawler 
