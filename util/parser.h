@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+
 #include <bits/stdc++.h>
 #include <curl/curl.h>
 #include <ctype.h>
@@ -14,6 +16,7 @@ const char VTC_source[] = "https://vtc.vn/sitemap.xml";
 const char PhapLuat_source[] = "https://www.phapluatplus.vn/sitemap.xml";
 const char TienPhong_source[] = "https://tienphong.vn/sitemap.xml";
 const char NguoiDuaTin_source[] = "https://www.nguoiduatin.vn/sitemap/sitemap-index.xml";
+const char DanTri_source[] = "https://dantri.com.vn/sitemaps/articles.xml";
 
 enum Format
 {
@@ -72,6 +75,8 @@ struct SiteMap
     Source source;
     string source_file_name;
     map<Date, string> date_url;
+    string source_url;
+    ofstream log_file;
 
     void AddToMap(string url, int year, int month, int day = -1)
     {
@@ -80,64 +85,19 @@ struct SiteMap
         date_url[key]=url;
     }
 
-    void SetNameBySource() {
-        if (!this->source)
-            return ;
-
-        switch (this->source)
-        {
-        case ZingNews:
-        {
-            source_file_name ="zing_sitemap";
-            break;
-        }
-
-        case ThanhNien:
-        {
-            source_file_name = "thanhnien_sitemap";
-            break;
-        }
-
-        case VietNamNet:
-        {
-            source_file_name = "vietnamnet_sitemap";
-            break;
-        }
-
-        case VTC:
-        {
-            source_file_name = "vtc_sitemap";
-            break;
-        }
-
-        case PhapLuat:
-        {
-            source_file_name = "phapluat_sitemap";
-            break;
-        }
-
-        case TienPhong:
-        {
-            source_file_name = "tienphong_sitemap";
-            break;
-        }
-
-        case DanTri:
-        {
-            source_file_name = "dantri_sitemap";
-            break;
-        }
-
-        case NguoiDuaTin:
-        {
-            source_file_name = "nguoiduatin_sitemap";
-            break;
-        }
-
-        default:
-            break;
-        }
+    // log to the site map log file with form "key : value"
+    void Log(string field, string value)
+    {
+        log_file << field << " : " << value << "\n";
     }
+
+    // log a single message to log file
+    void Log(string message)
+    {
+        log_file << message << "\n";
+    }
+
+    void SiteInit();
 };
 
 

@@ -48,26 +48,29 @@ int main()
     sm_array[6].source = DanTri;
     sm_array[7].source = NguoiDuaTin;
 
-
     // we have to sort each of the link of the sitemap by date
     // so that it is easier to find a topic that is similar
-    sm_array[1].SetNameBySource();
-    DownloadURLIntoFile(ThanhNien_source,sm_array[1].source_file_name+".xml");
-    ParseSiteMap(sm_array[1].source_file_name, sm_array[1].source, sm_array[1]);
 
-    // for (int i = 0; i< number_of_site; i++) {
-    //     sm_array[i].SetNameBySource();
-    //     sm_thread[i] = thread(&ParseSiteMap,sm_array[i].source_file_name,sm_array[i].source,ref(sm_array[i])) ;  
+    // int test_var = 3;
+    // sm_array[test_var].SiteInit();
+    // DownloadURLIntoFile(sm_array[test_var].source_url, sm_array[test_var].source_file_name + ".txt");
+    // ParseSiteMap(sm_array[test_var].source_file_name, sm_array[test_var].source, sm_array[test_var]);
 
-    //     cout << ">>>>>>>>> Start Parsing "<<sm_array[i].source_file_name<<" index: "<< i<< endl;
-    // }
+    for (int i = 0; i < number_of_site; i++)
+    {
+        sm_array[i].SiteInit();
+        DownloadURLIntoFile(sm_array[i].source_url, sm_array[i].source_file_name + ".txt");
+        sm_thread[i] = thread(&ParseSiteMap, sm_array[i].source_file_name, sm_array[i].source, ref(sm_array[i]));
 
-    
-    // for (int i = 0; i < number_of_site; i++) {
-    //      sm_thread[i].join();
-    //      cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
-    // }
+        cout << ">>>>>>>>> Start Parsing " << sm_array[i].source_file_name << " index: " << i << endl;
+    }
 
+    for (int i = 0; i < number_of_site; i++)
+    {
+        sm_thread[i].join();
+        sm_array[i].log_file.close();
+        cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
+    }
 
     return 0;   
 }
