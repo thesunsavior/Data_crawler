@@ -118,7 +118,7 @@ int main()
     // This function is temporarily ineffectively async
     {
         thread sm_thread[number_of_site];
-        cout << "++++++++++++++++++++++ Parsing other  source +++++++++++++++++++++++++++" << endl;
+        cout << "++++++++++++++++++++++ Parsing DB source +++++++++++++++++++++++++++" << endl;
         for (int i = 0; i < number_of_site; i++)
         {
             sm_thread[i] = thread(&ParseArticle, ref(sm_array[i]), ref(sm_news[i]));
@@ -132,6 +132,18 @@ int main()
     }
 
     //@todo: write to .dat file all saved newspaper so we can load them later without re-parsing
-    //@todo: Cluster documents with bag of words approach
+    fstream data_file;
+    data_file.open("news.dat", ios::out | ios::binary);
+    if (data_file.is_open())
+    {
+        // calculate the number of to write
+
+        data_file.write(reinterpret_cast<char *>(sm_news), sizeof(sm_news));
+        data_file.close();
+    }
+    else
+        cerr << "error opening datafile to write " << endl;
+
+    //@todo: Cluster documents with bag of words approach between
     return 0;
 }
