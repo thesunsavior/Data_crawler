@@ -20,16 +20,6 @@ void News::ParseNewsLine(string line)
             this->text = value;
             return;
         }
-        else if (field == "NLP_keywords")
-        {
-            this->NLP_keywords = seperator(value, ',');
-            return;
-        }
-        else if (field == "keywords")
-        {
-            this->keywords = seperator(value, ',');
-            return;
-        }
         else if (field == "Date")
         {
             this->publish_date = value;
@@ -44,8 +34,6 @@ void News::Clear()
     this->url = "";
     this->text = "";
     this->publish_date = "";
-    this->keywords.clear();
-    this->NLP_keywords.clear();
 }
 
 void ExecNewsParsing(string source_file_without_ext, string result_file_without_ext, string mode)
@@ -71,7 +59,7 @@ void ExecNewsParsing(string source_file_without_ext, string result_file_without_
     cout << "=================== Child process done ====================" << endl;
 }
 
-bool News::contains(string word)
+bool Doc::contains(string word)
 {
     if (bag_of_words.count(word) == 1)
         return true;
@@ -79,7 +67,7 @@ bool News::contains(string word)
     return false;
 }
 
-int News::get_value(string word)
+int Doc::get_value(string word)
 {
     if (!contains(word))
         return 0;
@@ -87,7 +75,7 @@ int News::get_value(string word)
     return bag_of_words[word];
 }
 
-void News::insert(string word)
+void Doc::insert(string word)
 {
     if (contains(word))
         bag_of_words[word]++;
@@ -95,7 +83,7 @@ void News::insert(string word)
         bag_of_words[word] = 1;
 }
 
-int News::dot_product(News &doc2)
+int Doc::dot_product(Doc &doc2)
 {
     int sum = 0;
     for (auto iter = cbegin(bag_of_words); iter != cend(bag_of_words); ++iter)
@@ -105,7 +93,7 @@ int News::dot_product(News &doc2)
 }
 
 // square euclid length of current doc words vector
-double News::sq_euclid_length()
+double Doc::sq_euclid_length()
 {
     double sum = 0.0;
     for (auto iter = cbegin(bag_of_words); iter != cend(bag_of_words); ++iter)
@@ -115,13 +103,13 @@ double News::sq_euclid_length()
 }
 
 // cosine distance of the currently consider doc with doc2
-double News::cos_similarity(News &doc2)
+double Doc::cos_similarity(Doc &doc2)
 {
     // sqrt here to get small marginal error
     return dot_product(doc2) / sqrt(sq_euclid_length() * doc2.sq_euclid_length());
 }
 
-void News::ExtractTextToBOW()
+void Doc::ExtractTextToBOW(string text)
 {
     string temp;
     for (int i = 0; i < text.length(); i++)

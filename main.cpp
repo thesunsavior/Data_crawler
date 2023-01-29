@@ -9,10 +9,12 @@
 
 using namespace std;
 
-const int number_of_site = 8;
+const int number_of_site = 7;
+const string input_name = "";
 
 SiteMap sm_array[number_of_site];
-vector<News> sm_news[number_of_site];
+vector<News> news_db;
+string input_text = "";
 
 void TestDownloadFlow()
 {
@@ -39,6 +41,18 @@ void TestDownloadFlow()
 
 int main()
 {
+    ifstream input_file;
+    input_file.open(input_name); //
+
+    // read input text
+    string temp;
+    while (getline(input_file, temp))
+    {
+        input_text += temp;
+    }
+
+    input_file.close();
+
     // set up source;
     sm_array[0].source = ZingNews;
     sm_array[1].source = ThanhNien;
@@ -47,7 +61,7 @@ int main()
     sm_array[4].source = PhapLuat;
     sm_array[5].source = TienPhong;
     sm_array[6].source = DanTri;
-    sm_array[7].source = NguoiDuaTin;
+    sm_array[7].source = NguoiDuaTin; // we have some problem with this source
 
     // we have to sort each of the link of the sitemap by date
     // so that it is easier to find a topic that is similar
@@ -76,44 +90,6 @@ int main()
         }
     }
 
-    // ================================ Parse the major source ===============================
-    // our main source is Thanh Nien
-    // parsing news paper
-    cout << "++++++++++++++++++++++ Parsing major source +++++++++++++++++++++++++++" << endl;
-    Date threshhold;
-    threshhold.set_date(2022, 12, 31);
-    int count = 0;
-    for (int i = 0; i < sm_array[1].date_url.size(); i++)
-    {
-        if (threshhold.compare(sm_array[1].date_url[i].first) >= 0)
-            continue;
-
-        DownloadURLIntoFile(sm_array[1].date_url[i].second, "Major_Source.txt");
-        ExecNewsParsing("Major_Source", "Major_result", "1");
-    }
-
-    string line;
-    News temp;
-    ifstream file_parser;
-    file_parser.open("Major_result");
-    while (getline(file_parser, line))
-    {
-        if (line.find("<news>") != string::npos || line.find("</news>") != string::npos)
-        {
-            if (line.find("</news>") != string::npos)
-            {
-                sm_news[1].push_back(temp);
-                temp.Clear();
-            }
-
-            continue;
-        }
-
-        temp.ParseNewsLine(line);
-    }
-
-    cout << "================================ Done parsing Major!!! ===============================" << endl;
-
     //@todo : create a thread pool for easy multithreading
     // This function is temporarily ineffectively async
     {
@@ -121,7 +97,7 @@ int main()
         cout << "++++++++++++++++++++++ Parsing DB source +++++++++++++++++++++++++++" << endl;
         for (int i = 0; i < number_of_site; i++)
         {
-            sm_thread[i] = thread(&ParseArticle, ref(sm_array[i]), ref(sm_news[i]));
+            sm_thread[i] = thread(&ParseArticle, ref(sm_array[i]), ref(news_db));
         }
 
         for (int i = 0; i < number_of_site; i++)
@@ -136,14 +112,19 @@ int main()
     data_file.open("news.dat", ios::out | ios::binary);
     if (data_file.is_open())
     {
-        // calculate the number of to write
-
-        data_file.write(reinterpret_cast<char *>(sm_news), sizeof(sm_news));
+        data_file.write(reinterpret_cast<char *>(&news_db), news_db.size() * sizeof(News));
         data_file.close();
     }
     else
         cerr << "error opening datafile to write " << endl;
 
     //@todo: Cluster documents with bag of words approach between
+    Doc input_doc;
+    input_doc.ExtractTextToBOW(input_text);
+
+    for (int i = 0; i < news_db.size(); i++)
+    {
+        //
+    }
     return 0;
 }

@@ -92,7 +92,7 @@ while starting_pos != -1:
         continuous_error +=1
         
          # too many continous error, drop now 
-        if continuous_error == 15:
+        if continuous_error == 10:
             print ("ME skippp")
 
             #set new starting pos 
@@ -101,21 +101,17 @@ while starting_pos != -1:
 
         continue
     
-    article.nlp()
-    if (article.publish_date == None):
-        print("Not an article, skip")
-        starting_pos = until +6
-        starting_pos = doc.find("<loc>",starting_pos)
-        continue
-
     #write to file
     f.write("<news>\n")
     f.write("<pr>url: "+article.source_url+"\n")
-    f.write("<pr>Date: "+article.publish_date.strftime('%m/%d/%Y')+"\n")
+    
+    try:
+        f.write("<pr>Date: "+article.publish_date.strftime('%m/%d/%Y')+"\n")
+    except:
+        print("This article has no date")
+
     f.write("<pr>title: "+article.title+"\n")
     f.write("<pr>body: "+article.text+"\n")
-    f.write("<pr>NLP_keywords: "+','.join (str(e) for e in article.keywords) +"\n")
-    f.write("<pr>keywords: "+','.join (str(e) for e in article.meta_keywords)+"\n")
     f.write("</news>\n")
 
     #set new starting pos 
