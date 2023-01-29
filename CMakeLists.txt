@@ -11,7 +11,9 @@ add_executable(main
         util/helper.h
         util/helper.cc
         util/parser.h
-        util/parser.cc)
+        util/parser.cc
+        util/news.cc
+        util/news.h)
 target_link_libraries(main ${CURL_LIBRARIES})
 
 

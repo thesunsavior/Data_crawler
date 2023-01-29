@@ -62,7 +62,7 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
                       }
 
                   // Lines that does not contain the date does not matter
-                  if (holder.length() < 6)
+                  if (holder.length() < 5)
                       continue;
 
                   string year = holder.substr(0, 4);
@@ -86,18 +86,17 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
                 int start_find_pos =0 ;
                 while (line.find("<loc>", start_find_pos) != string::npos)
                 {
-                    cout<< line <<endl;
-                    string url = GetInputBetween(line, "<loc>", "</loc>",start_find_pos);
+                  string url = GetInputBetween(line, "<loc>", "</loc>", start_find_pos);
 
-                    if (url!= "")
-                        start_find_pos = line.find("</loc>",start_find_pos)+6;
+                  if (url != "")
+                      start_find_pos = line.find("</loc>", start_find_pos) + 6;
 
-                    string holder = "";
-                    for (int i = 0; i < url.length(); i++)
-                        if (isdigit(url[i]))
-                        {
+                  string holder = "";
+                  for (int i = 0; i < url.length(); i++)
+                      if (isdigit(url[i]))
+                      {
                           holder += url[i];
-                        }
+                      }
 
                     // Lines that does not contain the date does not matter
                     if (holder.length() < 8)
@@ -126,7 +125,6 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
                 int start_find_pos =0 ;
                 while (line.find("<loc>", start_find_pos) != string::npos)
                 {
-                    cout<< line <<endl;
                     string url = GetInputBetween(line, "<loc>", "</loc>",start_find_pos);
 
                     if (url!= "")
@@ -143,11 +141,57 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note th
                     if (holder.length() < 6)
                         continue;
 
+                    if (site.source == VietNamNet)
+                    {
+                        DownloadURLIntoFile(url, sitemap_file_name + "_next_layer.txt");
+                        FormatParser(sitemap_file_name + "_next_layer", dd_mm_yy, site);
+                        continue;
+                    }
+
                     string year = holder.substr(2);
                     string month = holder.substr(0,2);
                     site.AddToMap(url, stoi(year), stoi(month));
                     site.Log("Year", year);
                     site.Log("Month", month);
+                    site.Log("Url", url);
+                    site.Log("======================================================");
+                }
+            }
+            break;
+        }
+
+        case dd_mm_yy:
+        {
+            string line;
+            while (getline(sitemap, line))
+            {
+                int start_find_pos = 0;
+                while (line.find("<loc>", start_find_pos) != string::npos)
+                {
+                    string url = GetInputBetween(line, "<loc>", "</loc>", start_find_pos);
+
+                    if (url != "")
+                        start_find_pos = line.find("</loc>", start_find_pos) + 6;
+
+                    string holder = "";
+                    for (int i = 0; i < url.length(); i++)
+                        if (isdigit(url[i]))
+                        {
+                          holder += url[i];
+                        }
+
+                    // Lines that does not contain the date does not matter
+                    if (holder.length() < 8)
+                        continue;
+
+                    string year = holder.substr(4);
+                    string month = holder.substr(2, 2);
+                    string day = holder.substr(0, 2);
+                    site.AddToMap(url, stoi(year), stoi(month), stoi(day));
+
+                    site.Log("Year", year);
+                    site.Log("Month", month);
+                    site.Log("day", day);
                     site.Log("Url", url);
                     site.Log("======================================================");
                 }
@@ -288,4 +332,39 @@ void SiteMap::SiteInit()
     }
 
     log_file.open("../log/" + source_file_name + "_log.txt");
+}
+
+void ParseArticle(SiteMap &site, vector<News> &sm_news)
+{
+    Date threshhold;
+    threshhold.set_date(2022, 12, 31);
+
+    for (int i = 0; i < site.date_url.size(); i++)
+    {
+            if (threshhold.compare(site.date_url[i].first) >= 0)
+                continue;
+
+            DownloadURLIntoFile(site.date_url[i].second, site.source_file_name + "_news_source.txt");
+            ExecNewsParsing(site.source_file_name + "_news_source", site.source_file_name + "_news", "1");
+    }
+
+    string line;
+    News temp;
+    ifstream file_parser;
+    file_parser.open(site.source_file_name + "_news.txt");
+    while (getline(file_parser, line))
+    {
+            if (line.find("<news>") != string::npos || line.find("</news>") != string::npos)
+            {
+                if (line.find("<news>") != string::npos)
+                {
+                    sm_news.push_back(temp);
+                    temp.Clear();
+                }
+
+                continue;
+            }
+
+            temp.ParseNewsLine(line);
+    }
 }

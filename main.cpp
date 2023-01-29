@@ -12,9 +12,10 @@ using namespace std;
 const int number_of_site = 8;
 
 SiteMap sm_array[number_of_site];
-thread sm_thread[number_of_site]; 
+vector<News> sm_news[number_of_site];
 
-void TestDownloadFlow () {
+void TestDownloadFlow()
+{
     char url[] = "https://thanhnien.vn/them-nan-nhan-bi-sap-bay-mua-dat-nen-vung-ven-post1538546.html";
     FILE *test = fopen("test.html", "w");
 
@@ -38,7 +39,7 @@ void TestDownloadFlow () {
 
 int main()
 {
-    //set up source;
+    // set up source;
     sm_array[0].source = ZingNews;
     sm_array[1].source = ThanhNien;
     sm_array[2].source = VietNamNet;
@@ -51,26 +52,86 @@ int main()
     // we have to sort each of the link of the sitemap by date
     // so that it is easier to find a topic that is similar
 
-    // int test_var = 3;
+    // ================================ Sort sitemap by date ===============================
+    // int test_var = 2;
     // sm_array[test_var].SiteInit();
     // DownloadURLIntoFile(sm_array[test_var].source_url, sm_array[test_var].source_file_name + ".txt");
     // ParseSiteMap(sm_array[test_var].source_file_name, sm_array[test_var].source, sm_array[test_var]);
-
-    for (int i = 0; i < number_of_site; i++)
     {
-        sm_array[i].SiteInit();
-        DownloadURLIntoFile(sm_array[i].source_url, sm_array[i].source_file_name + ".txt");
-        sm_thread[i] = thread(&ParseSiteMap, sm_array[i].source_file_name, sm_array[i].source, ref(sm_array[i]));
+        thread sm_thread[number_of_site];
+        for (int i = 0; i < number_of_site; i++)
+        {
+            sm_array[i].SiteInit();
+            DownloadURLIntoFile(sm_array[i].source_url, sm_array[i].source_file_name + ".txt");
+            sm_thread[i] = thread(&ParseSiteMap, sm_array[i].source_file_name, sm_array[i].source, ref(sm_array[i]));
 
-        cout << ">>>>>>>>> Start Parsing " << sm_array[i].source_file_name << " index: " << i << endl;
+            cout << ">>>>>>>>> Start Parsing " << sm_array[i].source_file_name << " index: " << i << endl;
+        }
+
+        for (int i = 0; i < number_of_site; i++)
+        {
+            sm_thread[i].join();
+            sm_array[i].log_file.close();
+            cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
+        }
     }
 
-    for (int i = 0; i < number_of_site; i++)
+    // ================================ Parse the major source ===============================
+    // our main source is Thanh Nien
+    // parsing news paper
+    cout << "++++++++++++++++++++++ Parsing major source +++++++++++++++++++++++++++" << endl;
+    Date threshhold;
+    threshhold.set_date(2022, 12, 31);
+    int count = 0;
+    for (int i = 0; i < sm_array[1].date_url.size(); i++)
     {
-        sm_thread[i].join();
-        sm_array[i].log_file.close();
-        cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
+        if (threshhold.compare(sm_array[1].date_url[i].first) >= 0)
+            continue;
+
+        DownloadURLIntoFile(sm_array[1].date_url[i].second, "Major_Source.txt");
+        ExecNewsParsing("Major_Source", "Major_result", "1");
     }
 
-    return 0;   
+    string line;
+    News temp;
+    ifstream file_parser;
+    file_parser.open("Major_result");
+    while (getline(file_parser, line))
+    {
+        if (line.find("<news>") != string::npos || line.find("</news>") != string::npos)
+        {
+            if (line.find("</news>") != string::npos)
+            {
+                sm_news[1].push_back(temp);
+                temp.Clear();
+            }
+
+            continue;
+        }
+
+        temp.ParseNewsLine(line);
+    }
+
+    cout << "================================ Done parsing Major!!! ===============================" << endl;
+
+    //@todo : create a thread pool for easy multithreading
+    // This function is temporarily ineffectively async
+    {
+        thread sm_thread[number_of_site];
+        cout << "++++++++++++++++++++++ Parsing other  source +++++++++++++++++++++++++++" << endl;
+        for (int i = 0; i < number_of_site; i++)
+        {
+            sm_thread[i] = thread(&ParseArticle, ref(sm_array[i]), ref(sm_news[i]));
+        }
+
+        for (int i = 0; i < number_of_site; i++)
+        {
+            sm_thread[i].join();
+            cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
+        }
+    }
+
+    //@todo: write to .dat file all saved newspaper so we can load them later without re-parsing
+    //@todo: Cluster documents with bag of words approach
+    return 0;
 }

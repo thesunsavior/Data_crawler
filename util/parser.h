@@ -1,3 +1,6 @@
+#ifndef UTIL_PARSER_H
+#define UTIL_PARSER_H
+
 #include <iostream>
 #include <fstream>
 
@@ -5,6 +8,7 @@
 #include <curl/curl.h>
 #include <ctype.h>
 
+#include "news.h"
 #include "helper.h"
 
 using namespace std;
@@ -23,6 +27,7 @@ enum Format
     yy,
     yy_mm,
     yy_mm_dd,
+    dd_mm_yy,
     mm_yy, // ( 2 layer: yy then yy-mm-dd )
 };
 
@@ -38,51 +43,25 @@ enum Source
     NguoiDuaTin
 };
 
-struct Date
-{
-
-    void set_date(int year, int month, int day = -1)
-    {
-        this->month = month;
-        this->year = year;
-        this->day = day;
-    }
-
-    int distance(Date *other)
-    {
-        int res = abs(other->month - this->month) + abs(other->year - this->year) * 10;
-        return res;
-    }
-
-    bool operator<(const Date &other) const
-    {
-        return (this->year - other.year) * 10 + (this->month - other.month) < 0;
-    }
-
-    bool operator()(const Date &me, const Date &you) const
-    {
-        return (me.year - you.year) * 10 + (me.month - you.month) > 0;
-    }
-
-private:
-    int month = -1;
-    int year = -1;
-    int day = -1;
-};
-
 struct SiteMap
 {
     Source source;
     string source_file_name;
-    map<Date, string> date_url;
+    vector<pair<Date, string>> date_url;
     string source_url;
     ofstream log_file;
+    vector<News> parse_news;
 
     void AddToMap(string url, int year, int month, int day = -1)
     {
         Date key;
         key.set_date(year, month, day);
-        date_url[key]=url;
+
+        pair<Date, string> temp;
+        temp.first = key;
+        temp.second = url;
+
+        date_url.push_back(temp);
     }
 
     // log to the site map log file with form "key : value"
@@ -105,3 +84,6 @@ struct SiteMap
 void FormatParser(string sitemap_file_name, Format fm, SiteMap &site); // note that file name here is without extension
 
 void ParseSiteMap(string sitemap_file_name, Source source, SiteMap &sitemap); // note that file name here is without extension
+
+void ParseArticle(SiteMap &site, vector<News> &sm_news);
+#endif

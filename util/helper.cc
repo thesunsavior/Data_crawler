@@ -57,3 +57,55 @@ void DownloadURLIntoFile(string url, string file_name_with_ext)
 
     fclose(file_write);
 }
+
+string ShellExec(const char *cmd)
+{
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe)
+    {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+    {
+        result += buffer.data();
+    }
+    return result;
+}
+
+vector<string> seperator(string line, char seperator)
+{
+    int last_pos = 0;
+    int len = 0;
+    int crr_holder = 0;
+    bool inside = false;
+    int count = 0;
+    vector<string> holder;
+    for (int i = 0; i < line.size(); i++)
+    {
+        if (!inside && line[i] == seperator)
+        {
+            holder.push_back(line.substr(last_pos, len));
+            last_pos = i + 1;
+            len = 0;
+            crr_holder++;
+            count++;
+        }
+        else
+        {
+            len++;
+            if (line[i] == '\"')
+            {
+                if (inside == true)
+                    inside = false;
+                else
+                    inside = true;
+            }
+        }
+    }
+    // for the last one
+    holder.push_back(line.substr(last_pos, len));
+
+    return holder;
+}
