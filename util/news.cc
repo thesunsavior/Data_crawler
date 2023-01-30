@@ -1,6 +1,6 @@
 #include "news.h"
 
-void News::ParseNewsLine(string line)
+void ParseNewsLine(string line, string &text)
 {
 
     if (line.substr(0, 4) == "<pr>")
@@ -10,30 +10,14 @@ void News::ParseNewsLine(string line)
         string field = line.substr(4, until - 4);
         string value = line.substr(until + 2);
 
-        if (field == "url")
+        if (field == "body")
         {
-            this->url = value;
+            text = value;
             return;
-        }
-        else if (field == "body")
-        {
-            this->text = value;
-            return;
-        }
-        else if (field == "Date")
-        {
-            this->publish_date = value;
         }
     }
     else
-        this->text += line;
-}
-
-void News::Clear()
-{
-    this->url = "";
-    this->text = "";
-    this->publish_date = "";
+        text += line;
 }
 
 void ExecNewsParsing(string source_file_without_ext, string result_file_without_ext, string mode)
@@ -57,6 +41,16 @@ void ExecNewsParsing(string source_file_without_ext, string result_file_without_
         exit(0);
     }
     cout << "=================== Child process done ====================" << endl;
+}
+
+void News::ImportFromString(string text)
+{
+    strcpy(this->text, text.c_str());
+}
+
+void News::Clear()
+{
+    // empty for now
 }
 
 bool Doc::contains(string word)
@@ -83,7 +77,7 @@ void Doc::insert(string word)
         bag_of_words[word] = 1;
 }
 
-int Doc::dot_product(Doc &doc2)
+int Doc::dot_product(Doc doc2)
 {
     int sum = 0;
     for (auto iter = cbegin(bag_of_words); iter != cend(bag_of_words); ++iter)
@@ -103,7 +97,7 @@ double Doc::sq_euclid_length()
 }
 
 // cosine distance of the currently consider doc with doc2
-double Doc::cos_similarity(Doc &doc2)
+double Doc::cos_similarity(Doc doc2)
 {
     // sqrt here to get small marginal error
     return dot_product(doc2) / sqrt(sq_euclid_length() * doc2.sq_euclid_length());
@@ -111,6 +105,8 @@ double Doc::cos_similarity(Doc &doc2)
 
 void Doc::ExtractTextToBOW(string text)
 {
+    this->raw_text = text;
+
     string temp;
     for (int i = 0; i < text.length(); i++)
     {
@@ -129,4 +125,9 @@ void Doc::ExtractTextToBOW(string text)
 
     if (temp != " ")
         this->insert(temp);
+}
+
+string Doc::GetRawText()
+{
+    return this->raw_text;
 }

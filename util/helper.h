@@ -11,7 +11,7 @@ using namespace std;
 struct Date
 {
 
-    void set_date(int year, int month, int day = -1)
+    void set_date(int year, int month, int day = 0)
     {
         this->month = month;
         this->year = year;
@@ -20,18 +20,48 @@ struct Date
 
     int compare(Date other)
     {
-        int res = (this->month - other.month) + (this->year - other.year) * 12;
+        int res = (this->month - other.month) * 31 + (this->year - other.year) * 377 + (this->day - other.day);
         return res;
     }
 
     bool operator<(const Date &other) const
     {
-        return (this->year - other.year) * 10 + (this->month - other.month) < 0;
+        return (this->year - other.year) * 377 + (this->month - other.month) * 31 + (this->day - other.day) < 0;
     }
 
     bool operator()(const Date &me, const Date &you) const
     {
-        return (me.year - you.year) * 10 + (me.month - you.month) > 0;
+        return (me.year - you.year) * 377 + (me.month - you.month) * 31 + (me.day - you.day) > 0;
+    }
+
+    string ToString()
+    {
+        string res = "";
+        res += to_string(year);
+        res += "-";
+        res += to_string(month);
+        res += "-";
+        res += to_string(day);
+    }
+
+    void ImportFromString(string s)
+    {
+        string temp;
+        int pos;
+        int year, day, month;
+
+        pos = s.find("-");
+        temp = s.substr(0, pos);
+        year = stoi(temp);
+
+        pos = s.find("-", pos + 1);
+        temp = s.substr(temp.size() + 2, pos - temp.size() - 2);
+        month = stoi(temp);
+
+        temp = s.substr(pos + 1);
+        day = stoi(temp);
+
+        this->set_date(year, month, day);
     }
 
 private:

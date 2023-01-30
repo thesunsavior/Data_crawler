@@ -11,48 +11,52 @@ using namespace std;
 
 const int number_of_site = 7;
 const string input_name = "";
+const int doc_range = 10;
 
 SiteMap sm_array[number_of_site];
 vector<News> news_db;
 string input_text = "";
+Doc input_doc;
+Date threshhold;
 
-void TestDownloadFlow()
+struct compare
 {
-    char url[] = "https://thanhnien.vn/them-nan-nhan-bi-sap-bay-mua-dat-nen-vung-ven-post1538546.html";
-    FILE *test = fopen("test.html", "w");
+public:
+    bool operator()(Doc &a, Doc &b)
+    {
+        return input_doc.cos_similarity(a) > input_doc.cos_similarity(b);
+    }
+};
+void BootAll()
+{
+    int news_db_size;
 
-    CURL *downloader = curl_easy_init();
-    curl_easy_setopt(downloader, CURLOPT_URL, url);
-    curl_easy_setopt(downloader, CURLOPT_WRITEDATA, test);
-    curl_easy_setopt(downloader, CURLOPT_FOLLOWLOCATION, 0L);
-    curl_easy_setopt(downloader, CURLOPT_ACCEPT_ENCODING, "gzip");
-    curl_easy_setopt(downloader, CURLOPT_VERBOSE, 1L);
+    // load threshhold and newsdb size
+    ifstream threshhold_file("parameter.txt");
+    if (threshhold_file.good())
+    {
+        string line;
+        getline(threshhold_file, line);
+        threshhold.ImportFromString(line);
 
-    int result = curl_easy_perform(downloader);
-
-    if (result == CURLE_OK)
-        cout << "File downloaded" << endl;
+        getline(threshhold_file, line);
+        news_db_size = stoi(line);
+    }
     else
-        cout << "Error has occur, code: " << result;
-    curl_easy_cleanup(downloader);
+        threshhold.set_date(2002, 3, 3); // retrieve the whole db
 
-    fclose(test);
+    // load newsdb
+    fstream data_file;
+    data_file.open("news.dat", ios::in | ios::binary);
+    if (data_file.good())
+    {
+        data_file.read(reinterpret_cast<char *>(&news_db), news_db_size * sizeof(News));
+    }
+    data_file.close();
 }
 
-int main()
+void UpdateNewsDB()
 {
-    ifstream input_file;
-    input_file.open(input_name); //
-
-    // read input text
-    string temp;
-    while (getline(input_file, temp))
-    {
-        input_text += temp;
-    }
-
-    input_file.close();
-
     // set up source;
     sm_array[0].source = ZingNews;
     sm_array[1].source = ThanhNien;
@@ -97,7 +101,7 @@ int main()
         cout << "++++++++++++++++++++++ Parsing DB source +++++++++++++++++++++++++++" << endl;
         for (int i = 0; i < number_of_site; i++)
         {
-            sm_thread[i] = thread(&ParseArticle, ref(sm_array[i]), ref(news_db));
+            sm_thread[i] = thread(&ParseArticle, ref(sm_array[i]), ref(news_db), threshhold);
         }
 
         for (int i = 0; i < number_of_site; i++)
@@ -106,7 +110,10 @@ int main()
             cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
         }
     }
+}
 
+void SaveAll()
+{
     //@todo: write to .dat file all saved newspaper so we can load them later without re-parsing
     fstream data_file;
     data_file.open("news.dat", ios::out | ios::binary);
@@ -118,13 +125,67 @@ int main()
     else
         cerr << "error opening datafile to write " << endl;
 
+    data_file.close();
+
+    ofstream threshhold_file;
+    threshhold_file.open("parameter.txt");
+    threshhold_file << threshhold.ToString() << "\n";
+    threshhold_file << news_db.size();
+    threshhold_file.close();
+}
+
+int main()
+{
+    ifstream input_file;
+    input_file.open(input_name); //
+
+    // read input text
+    string temp;
+    while (getline(input_file, temp))
+    {
+        input_text += temp;
+    }
+
+    input_file.close();
+
+    BootAll();
+
+    UpdateNewsDB();
+
+    SaveAll();
+
     //@todo: Cluster documents with bag of words approach between
-    Doc input_doc;
     input_doc.ExtractTextToBOW(input_text);
+    priority_queue<Doc, vector<Doc>, compare> pq;
 
     for (int i = 0; i < news_db.size(); i++)
     {
-        //
+        Doc temp;
+        temp.ExtractTextToBOW(news_db[i].text);
+        if (!pq.empty())
+        {
+            if (pq.size() < doc_range)
+            {
+                pq.push(temp);
+                continue;
+            }
+
+            if (input_doc.cos_similarity(temp) > input_doc.cos_similarity(pq.top()))
+            {
+                pq.pop();
+                pq.push(temp);
+            }
+        }
+        else
+            pq.push(temp);
     }
+
+    //@todo write to file the top 10 similar doc
+    // string temp;
+    // while (!pq.empty())
+    // {
+    //     temp = pq.top().GetRawText();
+    //     pq.pop();
+    // }
     return 0;
 }

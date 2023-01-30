@@ -334,10 +334,8 @@ void SiteMap::SiteInit()
     log_file.open("../log/" + source_file_name + "_log.txt");
 }
 
-void ParseArticle(SiteMap &site, vector<News> &sm_news)
+void ParseArticle(SiteMap &site, vector<News> &sm_news, Date threshhold)
 {
-    Date threshhold;
-    threshhold.set_date(2022, 12, 31);
 
     for (int i = 0; i < site.date_url.size(); i++)
     {
@@ -352,19 +350,22 @@ void ParseArticle(SiteMap &site, vector<News> &sm_news)
     News temp;
     ifstream file_parser;
     file_parser.open(site.source_file_name + "_news.txt");
+    string temp_string = "";
     while (getline(file_parser, line))
     {
             if (line.find("<news>") != string::npos || line.find("</news>") != string::npos)
             {
                 if (line.find("<news>") != string::npos)
                 {
+                    temp.ImportFromString(temp_string);
                     sm_news.push_back(temp);
                     temp.Clear();
+                    temp_string = "";
                 }
 
                 continue;
             }
 
-            temp.ParseNewsLine(line);
+            ParseNewsLine(line, temp_string);
     }
 }

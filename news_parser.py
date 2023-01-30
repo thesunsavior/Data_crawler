@@ -72,8 +72,9 @@ while starting_pos != -1:
         continuous_error =+1
         
         # too many continous error, drop now 
-        if continuous_error == 15:
+        if continuous_error == 10:
             print ("ME skippp")
+            continuous_error = 0 
 
             #set new starting pos 
             starting_pos = until +6
@@ -94,6 +95,7 @@ while starting_pos != -1:
          # too many continous error, drop now 
         if continuous_error == 10:
             print ("ME skippp")
+            continuous_error = 0 
 
             #set new starting pos 
             starting_pos = until +6
