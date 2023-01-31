@@ -1,5 +1,7 @@
 #include "news.h"
 
+const char spec_char[] = "!?@#.$%^&*(),;{}[]~:\"";
+
 void ParseNewsLine(string line, string &text)
 {
 
@@ -45,11 +47,16 @@ void ExecNewsParsing(string source_file_without_ext, string result_file_without_
 
 void News::ImportFromString(string text)
 {
-    strcpy(this->text, text.c_str());
+    int mini = 999998;
+    if (text.length() < mini)
+        mini = text.length();
+    strncpy(this->text, text.c_str(), mini);
+    this->text[mini + 1] = '\0';
 }
 
 void News::Clear()
 {
+    // text = "";
     // empty for now
 }
 
@@ -118,8 +125,11 @@ void Doc::ExtractTextToBOW(string text)
         else
         {
             // remove special character
-            if (isalpha(text[i]) || isdigit(text[i]))
-                temp += text[i];
+            for (int j = 0; j < 22; j++)
+                if (text[i] == spec_char[j])
+                    continue;
+
+            temp += text[i];
         }
     }
 

@@ -41,7 +41,7 @@ r = open(source_file_path,"r")
 doc = r.read()
 print("finish read")
 
-news_limit = 1000
+news_limit = 500
 count = 0 
 starting_pos = 0 
 # count continuous network error so that we would not stuck in a while loop
@@ -118,12 +118,11 @@ while starting_pos != -1:
     f.write("<pr>body: "+article.text+"\n")
     f.write("</news>\n")
     
-    #count and check limit 
-    count+=1
-    if count >= news_limit:
-        break
-
     #set new starting pos 
     starting_pos = until +6
     starting_pos = doc.find("<loc>",starting_pos)
 
+    #count and check limit 
+    count+=1
+    if count >= news_limit:
+        break

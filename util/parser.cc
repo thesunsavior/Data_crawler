@@ -3,6 +3,9 @@
 
 using namespace std;
 
+std::mutex mtx; // mutex for critical section
+const int News_limit = 10000;
+
 void FormatParser(string sitemap_file_name, Format fm, SiteMap &site) // note that file name here is without extension
 {
     ifstream sitemap;
@@ -336,30 +339,50 @@ void SiteMap::SiteInit()
 
 void ParseArticle(SiteMap &site, vector<News> &sm_news, Date threshhold)
 {
+    {
+            mtx.lock();
+            int te_size = sm_news.size();
+            if (te_size >= News_limit)
+            {
+                mtx.unlock();
+                return;
+            }
+            mtx.unlock();
+    }
 
+    // ifstream test(site.source_file_name + "_news.txt");
+    // if (!test.good())
     for (int i = 0; i < site.date_url.size(); i++)
     {
             if (threshhold.compare(site.date_url[i].first) >= 0)
                 continue;
 
             DownloadURLIntoFile(site.date_url[i].second, site.source_file_name + "_news_source.txt");
-            ExecNewsParsing(site.source_file_name + "_news_source", site.source_file_name + "_news", "1");
+            ExecNewsParsing(site.source_file_name + "_news_source", site.source_file_name + "_news", "0");
     }
 
-    string line;
-    News temp;
     ifstream file_parser;
     file_parser.open(site.source_file_name + "_news.txt");
+
+    string line;
     string temp_string = "";
     while (getline(file_parser, line))
     {
             if (line.find("<news>") != string::npos || line.find("</news>") != string::npos)
             {
-                if (line.find("<news>") != string::npos)
+                if (line.find("</news>") != string::npos)
                 {
+                    News temp;
                     temp.ImportFromString(temp_string);
+                    mtx.lock();
+                    int te_size = sm_news.size();
+                    if (te_size >= News_limit)
+                    {
+                        mtx.unlock();
+                        return;
+                    }
                     sm_news.push_back(temp);
-                    temp.Clear();
+                    mtx.unlock();
                     temp_string = "";
                 }
 
@@ -368,4 +391,5 @@ void ParseArticle(SiteMap &site, vector<News> &sm_news, Date threshhold)
 
             ParseNewsLine(line, temp_string);
     }
+    file_parser.close();
 }

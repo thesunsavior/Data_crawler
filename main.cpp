@@ -9,13 +9,14 @@
 
 using namespace std;
 
-const int number_of_site = 7;
-const string input_name = "";
+const int number_of_site = 4;
+const string input_name = "test.txt";
 const int doc_range = 10;
 
 SiteMap sm_array[number_of_site];
 vector<News> news_db;
 string input_text = "";
+bool update = true;
 Doc input_doc;
 Date threshhold;
 
@@ -41,9 +42,10 @@ void BootAll()
 
         getline(threshhold_file, line);
         news_db_size = stoi(line);
+        update = false;
     }
     else
-        threshhold.set_date(2002, 3, 3); // retrieve the whole db
+        threshhold.set_date(2023, 1, 30); // retrieve the whole db
 
     // load newsdb
     fstream data_file;
@@ -59,13 +61,13 @@ void UpdateNewsDB()
 {
     // set up source;
     sm_array[0].source = ZingNews;
-    sm_array[1].source = ThanhNien;
+    sm_array[1].source = PhapLuat;
     sm_array[2].source = VietNamNet;
     sm_array[3].source = VTC;
-    sm_array[4].source = PhapLuat;
-    sm_array[5].source = TienPhong;
-    sm_array[6].source = DanTri;
-    sm_array[7].source = NguoiDuaTin; // we have some problem with this source
+    // sm_array[4].source = ThanhNien;
+    // sm_array[5].source = TienPhong;
+    // sm_array[6].source = DanTri;
+    // sm_array[7].source = NguoiDuaTin; // we have some problem with this source
 
     // we have to sort each of the link of the sitemap by date
     // so that it is easier to find a topic that is similar
@@ -94,8 +96,9 @@ void UpdateNewsDB()
         }
     }
 
-    //@todo : create a thread pool for easy multithreading
+    // @todo : create a thread pool for easy multithreading
     // This function is temporarily ineffectively async
+
     {
         thread sm_thread[number_of_site];
         cout << "++++++++++++++++++++++ Parsing DB source +++++++++++++++++++++++++++" << endl;
@@ -110,6 +113,12 @@ void UpdateNewsDB()
             cout << "-------- Join " << sm_array[i].source_file_name << " index: " << i << endl;
         }
     }
+
+    // no thread
+    // for (int i = 0; i < number_of_site; i++)
+    // {
+    //     ParseArticle(sm_array[i], news_db, threshhold);
+    // }
 }
 
 void SaveAll()
@@ -140,20 +149,23 @@ int main()
     input_file.open(input_name); //
 
     // read input text
-    string temp;
-    while (getline(input_file, temp))
     {
-        input_text += temp;
-    }
+        string temp;
+        while (getline(input_file, temp))
+        {
+            input_text += temp;
+        }
 
-    input_file.close();
+        input_file.close();
+    }
 
     BootAll();
 
-    UpdateNewsDB();
+    if (update)
+        UpdateNewsDB();
 
-    SaveAll();
-
+    // SaveAll();
+    int temp_num = news_db.size();
     //@todo: Cluster documents with bag of words approach between
     input_doc.ExtractTextToBOW(input_text);
     priority_queue<Doc, vector<Doc>, compare> pq;
@@ -161,6 +173,7 @@ int main()
     for (int i = 0; i < news_db.size(); i++)
     {
         Doc temp;
+        string str = news_db[i].text;
         temp.ExtractTextToBOW(news_db[i].text);
         if (!pq.empty())
         {
@@ -181,11 +194,20 @@ int main()
     }
 
     //@todo write to file the top 10 similar doc
-    // string temp;
-    // while (!pq.empty())
-    // {
-    //     temp = pq.top().GetRawText();
-    //     pq.pop();
-    // }
+    {
+        ofstream counter;
+        Doc temp_doc;
+        int count = 0;
+        while (!pq.empty())
+        {
+            count++;
+            counter.open("id_" + to_string(count) + ".txt");
+            temp_doc = pq.top();
+            pq.pop();
+            counter << temp_doc.GetRawText();
+            counter.close();
+        }
+    }
+
     return 0;
 }

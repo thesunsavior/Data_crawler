@@ -85,5 +85,5 @@ void FormatParser(string sitemap_file_name, Format fm, SiteMap &site); // note t
 
 void ParseSiteMap(string sitemap_file_name, Source source, SiteMap &sitemap); // note that file name here is without extension
 
-void ParseArticle(SiteMap &site, vector<News> &sm_news);
+void ParseArticle(SiteMap &site, vector<News> &sm_news, Date threshhold);
 #endif

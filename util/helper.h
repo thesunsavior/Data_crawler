@@ -42,6 +42,7 @@ struct Date
         res += to_string(month);
         res += "-";
         res += to_string(day);
+        return res;
     }
 
     void ImportFromString(string s)
